@@ -1,5 +1,5 @@
-# GitHub Actions workflow to build and push Docker image to AWS ECR using OIDC
-name: Build and Push to ECR
+# Reusable workflow to build and push Docker images for multiple microservices to AWS ECR using OIDC
+name: Build and Push Microservices to ECR
 
 on:
 	push:
@@ -8,15 +8,22 @@ on:
 
 env:
 	AWS_REGION: ap-south-1
-	ECR_REPOSITORY: 123456789012.dkr.ecr.ap-south-1.amazonaws.com/patient-service
 	IMAGE_TAG: ${{ github.sha }}
 
 jobs:
 	build-and-push:
 		runs-on: ubuntu-latest
+		strategy:
+			matrix:
+				service:
+					- appointment-service-main
+					- patient-service
 		permissions:
 			id-token: write
 			contents: read
+		env:
+			SERVICE_NAME: ${{ matrix.service }}
+			ECR_REPOSITORY: 123456789012.dkr.ecr.ap-south-1.amazonaws.com/${{ matrix.service }}
 		steps:
 			- name: Checkout code
 				uses: actions/checkout@v4
@@ -33,7 +40,7 @@ jobs:
 
 			- name: Build Docker image
 				run: |
-					docker build -t $ECR_REPOSITORY:$IMAGE_TAG .
+					docker build -t $ECR_REPOSITORY:$IMAGE_TAG ./ $SERVICE_NAME
 
 			- name: Push Docker image to ECR
 				run: |
