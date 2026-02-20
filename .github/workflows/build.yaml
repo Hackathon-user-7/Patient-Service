@@ -1,13 +1,66 @@
-# Reusable workflow to build and push Docker images for multiple microservices to AWS ECR using OIDC
+# # Reusable workflow to build and push Docker images for multiple microservices to AWS ECR using OIDC
+# name: Build and Push Microservices to ECR
+
+# on:
+#   push:
+#     branches: [main]
+#   workflow_dispatch:
+
+# env:
+#   AWS_REGION: ap-south-1
+#   IMAGE_TAG: ${{ github.sha }}
+
+# jobs:
+#   build-and-push:
+#     runs-on: ubuntu-latest
+
+#     permissions:
+#       id-token: write
+#       contents: read
+
+#     strategy:
+#       matrix:
+#         service:
+#           - appointment-service-main
+#           - patient-service
+
+#     env:
+#       SERVICE_NAME: ${{ matrix.service }}
+#       ECR_REPOSITORY: 333813598365.dkr.ecr.ap-south-1.amazonaws.com/hackathon-repository:${{ matrix.service }}
+
+#     steps:
+#       - name: Checkout code
+#         uses: actions/checkout@v4
+
+#       - name: Configure AWS credentials (OIDC)
+#         uses: aws-actions/configure-aws-credentials@v4
+#         with:
+#           role-to-assume: arn:aws:iam::333813598365:role/hackathon-user-7
+#           aws-region: ${{ env.AWS_REGION }}
+
+#       - name: Login to Amazon ECR
+#         id: login-ecr
+#         uses: aws-actions/amazon-ecr-login@v2
+
+#       - name: Build Docker image
+#         run: |
+#           docker build -t $ECR_REPOSITORY ./${SERVICE_NAME}
+
+#       - name: Push Docker image to ECR
+#         run: |
+#           docker push $ECR_REPOSITORY:$IMAGE_TAG
+
 name: Build and Push Microservices to ECR
 
 on:
   push:
-    branches: [main]
+    branches: [ main ]
   workflow_dispatch:
 
 env:
   AWS_REGION: ap-south-1
+  ECR_REGISTRY: 333813598365.dkr.ecr.ap-south-1.amazonaws.com
+  ECR_REPOSITORY: hackathon-repository
   IMAGE_TAG: ${{ github.sha }}
 
 jobs:
@@ -24,10 +77,6 @@ jobs:
           - appointment-service-main
           - patient-service
 
-    env:
-      SERVICE_NAME: ${{ matrix.service }}
-      ECR_REPOSITORY: 333813598365.dkr.ecr.ap-south-1.amazonaws.com/hackathon-repository:${{ matrix.service }}
-
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -39,13 +88,19 @@ jobs:
           aws-region: ${{ env.AWS_REGION }}
 
       - name: Login to Amazon ECR
-        id: login-ecr
         uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Set Image URI
+        run: |
+          echo "IMAGE_URI=${ECR_REGISTRY}/${ECR_REPOSITORY}:${{ matrix.service }}-${IMAGE_TAG}" >> $GITHUB_ENV
+          echo "IMAGE_LATEST=${ECR_REGISTRY}/${ECR_REPOSITORY}:${{ matrix.service }}-latest" >> $GITHUB_ENV
 
       - name: Build Docker image
         run: |
-          docker build -t $ECR_REPOSITORY ./${SERVICE_NAME}
+          docker build -t $IMAGE_URI ./${{ matrix.service }}
+          docker tag $IMAGE_URI $IMAGE_LATEST
 
-      - name: Push Docker image to ECR
+      - name: Push Docker image
         run: |
-          docker push $ECR_REPOSITORY:$IMAGE_TAG
+          docker push $IMAGE_URI
+          docker push $IMAGE_LATEST
