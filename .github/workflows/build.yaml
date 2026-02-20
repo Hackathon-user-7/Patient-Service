@@ -1,0 +1,40 @@
+# GitHub Actions workflow to build and push Docker image to AWS ECR using OIDC
+name: Build and Push to ECR
+
+on:
+	push:
+		branches: [ main ]
+	workflow_dispatch:
+
+env:
+	AWS_REGION: ap-south-1
+	ECR_REPOSITORY: 123456789012.dkr.ecr.ap-south-1.amazonaws.com/patient-service
+	IMAGE_TAG: ${{ github.sha }}
+
+jobs:
+	build-and-push:
+		runs-on: ubuntu-latest
+		permissions:
+			id-token: write
+			contents: read
+		steps:
+			- name: Checkout code
+				uses: actions/checkout@v4
+
+			- name: Configure AWS credentials (OIDC)
+				uses: aws-actions/configure-aws-credentials@v4
+				with:
+					role-to-assume: arn:aws:iam::123456789012:role/github-actions-ecr-push
+					aws-region: ${{ env.AWS_REGION }}
+
+			- name: Login to Amazon ECR
+				id: login-ecr
+				uses: aws-actions/amazon-ecr-login@v2
+
+			- name: Build Docker image
+				run: |
+					docker build -t $ECR_REPOSITORY:$IMAGE_TAG .
+
+			- name: Push Docker image to ECR
+				run: |
+					docker push $ECR_REPOSITORY:$IMAGE_TAG
