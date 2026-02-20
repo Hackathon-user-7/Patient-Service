@@ -2,46 +2,50 @@
 name: Build and Push Microservices to ECR
 
 on:
-	push:
-		branches: [ main ]
-	workflow_dispatch:
+  push:
+    branches: [main]
+  workflow_dispatch:
 
 env:
-	AWS_REGION: ap-south-1
-	IMAGE_TAG: ${{ github.sha }}
+  AWS_REGION: ap-south-1
+  IMAGE_TAG: ${{ github.sha }}
 
 jobs:
-	build-and-push:
-		runs-on: ubuntu-latest
-		strategy:
-			matrix:
-				service:
-					- appointment-service-main
-					- patient-service
-		permissions:
-			id-token: write
-			contents: read
-		env:
-			SERVICE_NAME: ${{ matrix.service }}
-			ECR_REPOSITORY: 123456789012.dkr.ecr.ap-south-1.amazonaws.com/${{ matrix.service }}
-		steps:
-			- name: Checkout code
-				uses: actions/checkout@v4
+  build-and-push:
+    runs-on: ubuntu-latest
 
-			- name: Configure AWS credentials (OIDC)
-				uses: aws-actions/configure-aws-credentials@v4
-				with:
-					role-to-assume: arn:aws:iam::123456789012:role/github-actions-ecr-push
-					aws-region: ${{ env.AWS_REGION }}
+    permissions:
+      id-token: write
+      contents: read
 
-			- name: Login to Amazon ECR
-				id: login-ecr
-				uses: aws-actions/amazon-ecr-login@v2
+    strategy:
+      matrix:
+        service:
+          - appointment-service-main
+          - patient-service
 
-			- name: Build Docker image
-				run: |
-					docker build -t $ECR_REPOSITORY:$IMAGE_TAG ./ $SERVICE_NAME
+    env:
+      SERVICE_NAME: ${{ matrix.service }}
+      ECR_REPOSITORY: 333813598365.dkr.ecr.ap-south-1.amazonaws.com/${{ matrix.service }}
 
-			- name: Push Docker image to ECR
-				run: |
-					docker push $ECR_REPOSITORY:$IMAGE_TAG
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials (OIDC)
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::333813598365:role/hackathon-user-7
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Build Docker image
+        run: |
+          docker build -t $ECR_REPOSITORY:$IMAGE_TAG ./${SERVICE_NAME}
+
+      - name: Push Docker image to ECR
+        run: |
+          docker push $ECR_REPOSITORY:$IMAGE_TAG
