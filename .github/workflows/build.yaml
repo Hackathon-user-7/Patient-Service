@@ -44,7 +44,7 @@ jobs:
 
       - name: Build Docker image
         run: |
-          docker build -t $ECR_REPOSITORY:$IMAGE_TAG ./${SERVICE_NAME}
+          docker build -t $ECR_REPOSITORY ./${SERVICE_NAME}
 
       - name: Push Docker image to ECR
         run: |
