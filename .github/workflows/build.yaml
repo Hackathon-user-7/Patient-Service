@@ -26,7 +26,7 @@ jobs:
 
     env:
       SERVICE_NAME: ${{ matrix.service }}
-      ECR_REPOSITORY: 333813598365.dkr.ecr.ap-south-1.amazonaws.com/${{ matrix.service }}
+      ECR_REPOSITORY: 333813598365.dkr.ecr.ap-south-1.amazonaws.com/hackathon-repository:${{ matrix.service }}
 
     steps:
       - name: Checkout code
